@@ -19,8 +19,17 @@ registerPlugin(
             },
             {
                 name: 'format',
+                title: 'You can use the normal BB code to format your text like in TeamSpeak.'
+            },
+            {
+                name: 'priority',
                 title:
-                    'You can use the normal TeamSpeak text formatting in all string fields to format your text. For example "[b]text[/b]" will format your text bold.'
+                    'The order in which you define the groups is important! The script will go from top to bottom and overwrite each group so the last group you defined has the highest priority. Should a user be a member of two groups, they will only be displayed in the last one.'
+            },
+            {
+                name: 'functionality',
+                title:
+                    "The script stores usernames from people that should be listed. Each user that needs to appear in the list has to join the server atleast once while the script is running. If the script doesn't have any stored members for a specific group yet, it will not be displayed."
             },
             {
                 name: 'channel',
