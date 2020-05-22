@@ -277,7 +277,7 @@ registerPlugin(
                     }
                 });
 
-                description += `${staffGroup.name}\n${membersToList}${separator}\n`;
+                if (membersToList !== '') description += `${staffGroup.name}\n${membersToList}${separator}\n`;
             });
 
             // set new description to channel
