@@ -7,7 +7,7 @@
 registerPlugin(
     {
         name: 'Staff List',
-        version: '1.0.0',
+        version: '1.1.0',
         description:
             'With this script, the bot will automatically keep track of the online status of predefined staff members and post it to a chosen channel description.',
         author: 'RLNT',
@@ -19,8 +19,17 @@ registerPlugin(
             },
             {
                 name: 'format',
+                title: 'You can use the normal BB code to format your text like in TeamSpeak.'
+            },
+            {
+                name: 'priority',
                 title:
-                    'You can use the normal TeamSpeak text formatting in all string fields to format your text. For example "[b]text[/b]" will format your text bold.'
+                    'The order in which you define the groups is important! The script will go from top to bottom and overwrite each group so the last group you defined has the highest priority. Should a user be a member of two groups, they will only be displayed in the last one.'
+            },
+            {
+                name: 'functionality',
+                title:
+                    "The script stores usernames from people that should be listed. Each user that needs to appear in the list has to join the server atleast once while the script is running. If the script doesn't have any stored members for a specific group yet, it will not be displayed."
             },
             {
                 name: 'channel',
@@ -87,7 +96,7 @@ registerPlugin(
             }
         ]
     },
-    (SinusBot, config) => {
+    (_, config) => {
         // DEPENDENCIES
         const engine = require('engine');
         const backend = require('backend');
@@ -209,30 +218,37 @@ registerPlugin(
             return found;
         }
 
+        function getSortedMemberList() {
+            let membersOnline = [];
+            let membersOffline = [];
+            memberList.forEach(member => {
+                const memberUid = member[0];
+                if (backend.getClientByUID(memberUid) !== undefined) {
+                    membersOnline.push(member);
+                } else {
+                    membersOffline.push(member);
+                }
+            });
+            membersOnline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+            membersOffline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+
+            return [ membersOnline, membersOffline ];
+        }
+
         function updateDescription(staffGroups, clickable, phraseOnline, phraseOffline, separator, channel) {
             let description = '';
+            const sortedMemberList = getSortedMemberList();
+            const membersOnline = sortedMemberList[0];
+            const membersOffline = sortedMemberList[1];
             staffGroups.forEach(staffGroup => {
-                let membersOnline = [];
-                let membersOffline = [];
-                memberList.forEach(member => {
-                    const memberUid = member[0];
-                    if (backend.getClientByUID(memberUid) !== undefined) {
-                        membersOnline.push(member);
-                    } else {
-                        membersOffline.push(member);
-                    }
-                });
-                membersOnline.sort((a, b) => {
-                    if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
-                    if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
-                    return 0;
-                });
-                membersOffline.sort((a, b) => {
-                    if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
-                    if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
-                    return 0;
-                });
-
                 let membersToList = '';
                 membersOnline.forEach(member => {
                     const memberUid = member[0];
@@ -261,7 +277,7 @@ registerPlugin(
                     }
                 });
 
-                description += `${staffGroup.name}\n${membersToList}${separator}\n`;
+                if (membersToList !== '') description += `${staffGroup.name}\n${membersToList}${separator}\n`;
             });
 
             // set new description to channel
