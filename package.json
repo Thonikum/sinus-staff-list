@@ -1,0 +1,17 @@
+{
+    "name": "sinus-staff-list",
+    "version": "1.0.0",
+    "description": "With this script, the bot will automatically keep track of the online status of predefined staff members and post it to a chosen channel description.",
+    "main": "src/staff-list.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "RLNT",
+    "license": "MIT",
+    "devDependencies": {
+        "eslint": "^7.0.0"
+    },
+    "dependencies": {
+        "sinusbot-scripting-engine": "^1.0.18"
+    }
+}
