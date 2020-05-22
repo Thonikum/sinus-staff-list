@@ -96,7 +96,7 @@ registerPlugin(
             }
         ]
     },
-    (SinusBot, config) => {
+    (_, config) => {
         // DEPENDENCIES
         const engine = require('engine');
         const backend = require('backend');
