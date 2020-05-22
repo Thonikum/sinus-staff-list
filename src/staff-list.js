@@ -218,30 +218,37 @@ registerPlugin(
             return found;
         }
 
+        function getSortedMemberList() {
+            let membersOnline = [];
+            let membersOffline = [];
+            memberList.forEach(member => {
+                const memberUid = member[0];
+                if (backend.getClientByUID(memberUid) !== undefined) {
+                    membersOnline.push(member);
+                } else {
+                    membersOffline.push(member);
+                }
+            });
+            membersOnline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+            membersOffline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+
+            return [ membersOnline, membersOffline ];
+        }
+
         function updateDescription(staffGroups, clickable, phraseOnline, phraseOffline, separator, channel) {
             let description = '';
+            const sortedMemberList = getSortedMemberList();
+            const membersOnline = sortedMemberList[0];
+            const membersOffline = sortedMemberList[1];
             staffGroups.forEach(staffGroup => {
-                let membersOnline = [];
-                let membersOffline = [];
-                memberList.forEach(member => {
-                    const memberUid = member[0];
-                    if (backend.getClientByUID(memberUid) !== undefined) {
-                        membersOnline.push(member);
-                    } else {
-                        membersOffline.push(member);
-                    }
-                });
-                membersOnline.sort((a, b) => {
-                    if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
-                    if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
-                    return 0;
-                });
-                membersOffline.sort((a, b) => {
-                    if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
-                    if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
-                    return 0;
-                });
-
                 let membersToList = '';
                 membersOnline.forEach(member => {
                     const memberUid = member[0];
