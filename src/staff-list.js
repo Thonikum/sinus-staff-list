@@ -106,6 +106,7 @@ registerPlugin(
         // GLOBAL VARS
         const prefix = 'Staff-List';
         let memberList = [];
+        let groupList = [];
 
         // GLOBAL FUNCTIONS
         function log(message) {
@@ -161,6 +162,7 @@ registerPlugin(
                     group.name = '[size=12][B]' + backend.getServerGroupByID(group.id).name() + '[/B][/size]';
                 }
 
+                groupList = groupList.concat(group.groups);
                 staffGroups.push(group);
             });
 
@@ -188,6 +190,13 @@ registerPlugin(
                 store.set(uid, [ nick, group ]);
             }
             updateMemberList();
+        }
+
+        function removeMember(uid) {
+            if (store.getKeys().includes(uid)) {
+                store.unset(uid);
+                updateMemberList();
+            }
         }
 
         function getClientGroup(client, staffGroups) {
@@ -326,6 +335,37 @@ registerPlugin(
                         // update the description
                         updateDescription(staffGroups, clickable, phraseOnline, phraseOffline, separator, channel);
                     }
+                }
+            });
+
+            // SERVER GROUP ADDED EVENT
+            event.on('serverGroupAdded', event => {
+                const client = event.client;
+                if (client.isSelf()) return;
+                const eventGroup = event.serverGroup.id();
+                const clientGroup = getClientGroup(client, staffGroups);
+
+                if (groupList.includes(eventGroup)) {
+                    storeMember(client.uid(), client.nick(), clientGroup.id);
+                    updateDescription(staffGroups, clickable, phraseOnline, phraseOffline, separator, channel);
+                }
+            });
+
+            // SERVER GROUP REMOVE EVENT
+            event.on('serverGroupRemoved', event => {
+                const client = event.client;
+                if (client.isSelf()) return;
+                const eventGroup = event.serverGroup.id();
+                const clientGroup = getClientGroup(client, staffGroups);
+
+                if (groupList.includes(eventGroup)) {
+                    if (clientGroup === undefined) {
+                        removeMember(client.uid());
+                    } else {
+                        storeMember(client.uid(), client.nick(), clientGroup.id);
+                    }
+
+                    updateDescription(staffGroups, clickable, phraseOnline, phraseOffline, separator, channel);
                 }
             });
         }
