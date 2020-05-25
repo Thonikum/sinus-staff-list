@@ -141,22 +141,12 @@ registerPlugin(
 
             config.staffGroups.forEach(group => {
                 if (group.id === undefined || backend.getServerGroupByID(group.id) === undefined) return;
-                if (group.clients === undefined || group.clients.length === 0) {
-                    if (group.groups === undefined || group.groups.length === 0) {
-                        group.clients = [];
-                        group.groups = [ group.id ];
-                    } else {
-                        group.clients = [];
-                        group.groups.map(id => backend.getServerGroupByID(id) !== undefined && id !== group.id);
-                        group.groups.concat([ group.id ]);
-                    }
+                if (group.clients === undefined || group.clients.length === 0) group.clients = [];
+                if (group.groups === undefined || group.groups.length === 0) {
+                    group.groups = [ group.id ];
                 } else {
-                    if (group.groups === undefined || group.groups.length === 0) {
-                        group.groups = [ group.id ];
-                    } else {
-                        group.groups.map(id => backend.getServerGroupByID(id) !== undefined && id !== group.id);
-                        group.groups.concat([ group.id ]);
-                    }
+                    group.groups.map(id => backend.getServerGroupByID(id) !== undefined && id !== group.id);
+                    group.groups.push(group.id);
                 }
                 if (group.name === undefined || group.name === '') {
                     group.name = '[size=12][B]' + backend.getServerGroupByID(group.id).name() + '[/B][/size]';
@@ -339,7 +329,7 @@ registerPlugin(
                 const group = getClientGroup(client, staffGroups);
 
                 // make sure it's a user that has to be listed
-                if (group !== null) {
+                if (group !== undefined) {
                     // on connect or disconnect
                     if (fromChannel === undefined || toChannel === undefined) {
                         // make sure user is stored
