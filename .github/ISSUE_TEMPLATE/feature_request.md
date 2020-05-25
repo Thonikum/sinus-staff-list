@@ -1,8 +1,8 @@
 ---
-name: Feature request
-about: Suggest an idea for the script
+name: Feature Request / Improvement
+about: Suggest an idea or a new feature for the script
 title: ''
-labels: enhancement
+labels: status > pending, type > enhancement
 assignees: ''
 ---
 
@@ -13,14 +13,16 @@ If you need help with the script, join the Discord instead!
 https://discordapp.com/invite/Q3qxws6
 -->
 
-**Is your feature request related to a problem?**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+<!--
+Please submit one idea or feature per submission please!
+-->
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+### Feature Description
+<!--
+Please give a clear and concise description of the idea you have or the feature you want to see.
+-->
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
-
-**Additional context**
-Add any other context or screenshots about the feature request here.
+### Additional Context
+<!--
+If applicable, add images to help explaining your idea.
+-->
