@@ -11,6 +11,22 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 
 ## [Released]
 
+## [1.2.0] - 2020-05-25
+
+### Added
+- group assigment listeners
+  - description is now updated when a staff group is added or removed
+- database validation
+  - config changes while the bot was offline are now recognized
+- template formatting
+
+### Removed
+- unnecessary checks
+
+### Fixed
+- move event checking for the wrong output of the staff group detection function
+
+
 ## [1.1.0] - 2020-05-22
 
 ### Added
@@ -35,5 +51,6 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 <!-- Versions -->
 [Unreleased]: https://github.com/RLNT/sinus-staff-list/compare/v1.0.0...HEAD
 [Released]: https://github.com/RLNT/sinus-staff-list/releases
+[1.2.0]: https://github.com/RLNT/sinus-staff-list/compare/v1.1.0..v1.2.0
 [1.1.0]: https://github.com/RLNT/sinus-staff-list/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/RLNT/sinus-staff-list/releases/v1.0.0
