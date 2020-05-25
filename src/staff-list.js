@@ -169,6 +169,12 @@ registerPlugin(
             return staffGroups;
         }
 
+        function validateDatabase() {
+            store.getKeys().forEach(key => {
+                if (!groupList.includes(store.get(key)[1])) removeMember(key);
+            });
+        }
+
         function updateMemberList() {
             let list = [];
             const keys = store.getKeys();
@@ -303,10 +309,17 @@ registerPlugin(
             const phraseOnline = config.phraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
             const phraseOffline = config.phraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
 
+            // validate database
+            validateDatabase();
+
             // store all online listed members
             backend.getClients().forEach(client => {
                 const staffGroup = getClientGroup(client, staffGroups);
-                if (staffGroup !== undefined) store.set(client.uid(), [ client.nick(), staffGroup.id ]);
+                if (staffGroup !== undefined) {
+                    storeMember(client.uid(), client.nick(), staffGroup.id);
+                } else {
+                    removeMember(client.uid());
+                }
             });
 
             // update the cached member list
