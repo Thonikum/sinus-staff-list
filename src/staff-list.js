@@ -89,6 +89,70 @@ registerPlugin(
                 ]
             },
             {
+                name: 'tAway',
+                title: 'Do you want to use a separate away status?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'tPhraseAway',
+                title: 'The phrase that should be shown if the corresponding user is away.',
+                type: 'string',
+                placeholder: '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]',
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 0
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'tAwayMute',
+                title: 'Do you want a muted client to be set as away?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 0
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'tAwayDeaf',
+                title: 'Do you want a deaf client to be set as away?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 0
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
                 name: 'tMemberLine',
                 title:
                     'Define what a full line in the member list should look like. | placeholders: %name% - formatted username, %status% - formatted online status, %lb% - line break',
@@ -152,6 +216,70 @@ registerPlugin(
                     {
                         field: 'template',
                         value: 1
+                    }
+                ]
+            },
+            {
+                name: 'away',
+                title: 'Do you want to use a separate away status',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 1
+                    }
+                ]
+            },
+            {
+                name: 'phraseAway',
+                title: 'The phrase that should be shown if the corresponding user is away.',
+                type: 'string',
+                placeholder: '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]',
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 1
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'awayMute',
+                title: 'Do you want a muted client to be set as away?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 1
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'awayDeaf',
+                title: 'Do you want a deaf client to be set as away?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 1
+                    },
+                    {
+                        field: 'away',
+                        value: 0
                     }
                 ]
             },
@@ -323,16 +451,51 @@ registerPlugin(
 
         function getSortedMemberList() {
             let membersOnline = [];
+            let membersAway = [];
             let membersOffline = [];
             memberList.forEach(member => {
                 const memberUid = member[0];
-                if (backend.getClientByUID(memberUid) !== undefined) {
-                    membersOnline.push(member);
+                const client = backend.getClientByUID(memberUid);
+                if (client !== undefined) {
+                    if (config.template) {
+                        if (config.tAway == 0) {
+                            let away = false;
+                            if (client.isAway()) away = true;
+                            if (config.tAwayMute == 0 && client.isMuted()) away = true;
+                            if (config.tAwayDeaf == 0 && client.isDeaf()) away = true;
+                            if (away) {
+                                membersAway.push(member);
+                            } else {
+                                membersOnline.push(member);
+                            }
+                        } else {
+                            membersOnline.push(member);
+                        }
+                    } else {
+                        if (config.away == 0) {
+                            let away = false;
+                            if (client.isAway()) away = true;
+                            if (config.awayMute == 0 && client.isMuted()) away = true;
+                            if (config.awayDeaf == 0 && client.isDeaf()) away = true;
+                            if (away) {
+                                membersAway.push(member);
+                            } else {
+                                membersOnline.push(member);
+                            }
+                        } else {
+                            membersOnline.push(member);
+                        }
+                    }
                 } else {
                     membersOffline.push(member);
                 }
             });
             membersOnline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+            membersAway.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
@@ -343,29 +506,32 @@ registerPlugin(
                 return 0;
             });
 
-            return [ membersOnline, membersOffline ];
+            return [ membersOnline, membersAway, membersOffline ];
         }
 
         function updateDescription(staffGroups, channel) {
             const template = config.template == 0;
             const clickable = config.clickable == 0;
-            let username, memberLine, groupSection, separator, phraseOnline, phraseOffline;
+            let username, memberLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
 
             if (config.template == 0) {
                 username = config.tUsername || '[B]%name%[/B]';
                 memberLine = config.tMemberLine || '%name% [COLOR=#aaff00]>[/COLOR] %status%';
                 groupSection = config.tGroupSection || '[center]%group%\n%members%____________________[/center]';
                 phraseOnline = config.tPhraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
+                phraseAway = config.tPhraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
                 phraseOffline = config.tPhraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
             } else {
                 separator = config.separator || '_______________________________________';
                 phraseOnline = config.phraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
+                phraseAway = config.phraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
                 phraseOffline = config.phraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
             }
 
             const sortedMemberList = getSortedMemberList();
             const membersOnline = sortedMemberList[0];
-            const membersOffline = sortedMemberList[1];
+            const membersAway = sortedMemberList[1];
+            const membersOffline = sortedMemberList[2];
             let description = '';
 
             staffGroups.forEach(staffGroup => {
@@ -396,6 +562,34 @@ registerPlugin(
                         membersToList += `${memberToList}\n`;
                     }
                 });
+                if (config.away == 0 || config.taway == 0) {
+                    membersAway.forEach(member => {
+                        const memberUid = member[0];
+                        const memberNick = member[1];
+                        const memberGroup = member[2];
+
+                        if (staffGroup.id === memberGroup) {
+                            let memberName = '';
+                            if (clickable) {
+                                memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
+                            } else {
+                                memberName = `${memberNick}`;
+                            }
+
+                            let memberToList = '';
+                            if (template) {
+                                memberToList = memberLine
+                                    .replace('%name%', username.replace('%name%', memberName))
+                                    .replace('%status%', phraseAway)
+                                    .replace('%lb%', '\n');
+                            } else {
+                                memberToList = `${memberName} - ${phraseAway}`;
+                            }
+
+                            membersToList += `${memberToList}\n`;
+                        }
+                    });
+                }
                 membersOffline.forEach(member => {
                     const memberUid = member[0];
                     const memberNick = member[1];
@@ -482,6 +676,78 @@ registerPlugin(
                         storeMember(uid, nick, group.id);
 
                         // update the description
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientAway', event => {
+                if (config.away == 0 || config.taway == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientBack', event => {
+                if (config.away == 0 || config.taway == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientMute', event => {
+                if (config.awayMute == 0 || config.tawayMute == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientUnmute', event => {
+                if (config.awayMute == 0 || config.tawayMute == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientDeaf', event => {
+                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientUndeaf', event => {
+                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
                         updateDescription(staffGroups, channel);
                     }
                 }
