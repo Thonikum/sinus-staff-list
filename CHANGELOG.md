@@ -14,11 +14,11 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 ## [1.2.0] - 2020-05-25
 
 ### Added
-- group assigment listeners
+- group assigment listeners ([#3](https://github.com/RLNT/sinus-staff-list/issues/3))
   - description is now updated when a staff group is added or removed
 - database validation
   - config changes while the bot was offline are now recognized
-- template formatting
+- template formatting ([#1](https://github.com/RLNT/sinus-staff-list/issues/1))
 
 ### Removed
 - unnecessary checks
