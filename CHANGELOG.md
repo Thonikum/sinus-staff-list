@@ -11,6 +11,21 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 
 ## [Released]
 
+## [1.3.0] - 2020-05-28
+
+### Added
+- away status ([#4](https://github.com/RLNT/sinus-staff-list/pull/4))
+  - possibility to detect muted, deaf and away clients
+  - afk room detection
+- configuration guide ([here](CONFIGURATION.md))
+
+### Changed
+- global variable handling
+- script loading event and waiting for backend
+- refactored a lot of code
+- performance increase by handling client lists different
+
+
 ## [1.2.0] - 2020-05-25
 
 ### Added
@@ -51,6 +66,7 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 <!-- Versions -->
 [Unreleased]: https://github.com/RLNT/sinus-staff-list/compare/v1.0.0...HEAD
 [Released]: https://github.com/RLNT/sinus-staff-list/releases
+[1.3.0]: https://github.com/RLNT/sinus-staff-list/compare/v1.2.0..v1.3.0
 [1.2.0]: https://github.com/RLNT/sinus-staff-list/compare/v1.1.0..v1.2.0
 [1.1.0]: https://github.com/RLNT/sinus-staff-list/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/RLNT/sinus-staff-list/releases/v1.0.0
