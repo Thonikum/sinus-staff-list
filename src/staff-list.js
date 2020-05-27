@@ -3,6 +3,8 @@
     Requested by: Mortis
     License: MIT
     Repository: https://github.com/RLNT/sinus-staff-list
+    Resource-Page: https://forum.sinusbot.com/resources/staff-list.497/
+    Discord: https://discord.com/invite/Q3qxws6
 */
 registerPlugin(
     {
