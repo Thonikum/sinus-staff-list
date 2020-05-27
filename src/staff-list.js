@@ -3,11 +3,13 @@
     Requested by: Mortis
     License: MIT
     Repository: https://github.com/RLNT/sinus-staff-list
+    Resource-Page: https://forum.sinusbot.com/resources/staff-list.497/
+    Discord: https://discord.com/invite/Q3qxws6
 */
 registerPlugin(
     {
         name: 'Staff List',
-        version: '1.2.0',
+        version: '1.3.0',
         description:
             'With this script, the bot will automatically keep track of the online status of predefined staff members and post it to a chosen channel description.',
         author: 'RLNT',
@@ -24,7 +26,8 @@ registerPlugin(
             },
             {
                 name: 'configuration',
-                title: 'A guide how to configure the script to your needs can be found here: ' // TODO
+                title:
+                    'A guide how to configure the script to your needs can be found here: https://github.com/RLNT/sinus-staff-list/blob/master/CONFIGURATION.md'
             },
             {
                 name: 'spacer0',
@@ -326,41 +329,62 @@ registerPlugin(
 
         // GLOBAL VARS
         const prefix = 'Staff-List';
-        let memberList = [];
+        let staffList = [];
         let groupList = [];
 
-        // GLOBAL FUNCTIONS
+        const template = varDef(config.template, 1) == 0;
+        const clickable = varDef(config.clickable, 0) == 0;
+        const away = varDef(config.away, 1) == 0;
+        let awayChannel, awayMute, awayDeaf;
+        if (away) {
+            awayChannel = varDef(config.awayChannel, 1) == 0;
+            awayMute = varDef(config.awayMute, 1) == 0;
+            awayDeaf = varDef(config.awayDeaf, 1) == 0;
+        } else {
+            awayChannel = false;
+            awayMute = false;
+            awayDeaf = false;
+        }
+        let username, userLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
+        if (template) {
+            username = varDef(config.tUsername, '[B]%name%[/B]');
+            userLine = varDef(config.tMemberLine, '%name% [COLOR=#aaff00]>[/COLOR] %status%');
+            groupSection = varDef(config.tGroupSection, '[center]%group%\n%users%____________________[/center]');
+            phraseOnline = varDef(config.tPhraseOnline, '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]');
+            phraseAway = varDef(config.tPhraseAway, '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]');
+            phraseOffline = varDef(config.tPhraseOffline, '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]');
+        } else {
+            separator = varDef(config.separator, '_______________________________________');
+            phraseOnline = varDef(config.phraseOnline, '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]');
+            phraseAway = varDef(config.phraseAway, '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]');
+            phraseOffline = varDef(config.phraseOffline, '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]');
+        }
+
+        // FUNCTIONS
         function log(message) {
             engine.log(prefix + ' > ' + message);
         }
 
-        function waitForBackend() {
-            if (backend.isConnected()) {
-                main();
+        function varDef(v, defVal) {
+            if (v === undefined || v === null || v === '') {
+                return defVal;
             } else {
-                setTimeout(waitForBackend, 2000);
+                return v;
             }
         }
 
-        // LOADING EVENT
-        event.on('load', () => {
-            if (config.channel === undefined) {
-                log('There was no channel selected to display the staff list. Deactivating script...');
-                return;
-            } else if (config.staffGroups === undefined || config.staffGroups.length === 0) {
-                log('There are no staff groups selected to be displayed in the staff list. Deactivating script...');
-                return;
-            } else if (config.template === undefined) {
-                log('There was no formatting option selected. Deactivating script...');
-                return;
-            } else {
-                log('The script has loaded successfully!');
-                waitForBackend();
-            }
-        });
+        function waitForBackend() {
+            return new Promise(done => {
+                const timer = setInterval(() => {
+                    if (backend.isConnected()) {
+                        clearInterval(timer);
+                        done();
+                    }
+                }, 1000);
+            });
+        }
 
-        // FUNCTIONS
-        function validateListGroups() {
+        function validateStaffGroups() {
             let staffGroups = [];
 
             config.staffGroups.forEach(group => {
@@ -385,21 +409,11 @@ registerPlugin(
 
         function validateDatabase() {
             store.getKeys().forEach(key => {
-                if (!groupList.includes(store.get(key)[1])) removeMember(key);
+                if (!groupList.includes(store.get(key)[1])) removeUser(key);
             });
         }
 
-        function updateMemberList() {
-            let list = [];
-            const keys = store.getKeys();
-            keys.forEach(key => {
-                list.push([ key, store.get(key)[0], store.get(key)[1] ]);
-            });
-
-            memberList = list;
-        }
-
-        function storeMember(uid, nick, group) {
+        function storeUser(uid, nick, group) {
             if (!store.getKeys().includes(uid)) {
                 store.set(uid, [ nick, group ]);
             } else if (store.get(uid)[0] !== nick) {
@@ -409,34 +423,41 @@ registerPlugin(
                 store.unset(uid);
                 store.set(uid, [ nick, group ]);
             }
-            updateMemberList();
+            updateStaffList();
         }
 
-        function removeMember(uid) {
+        function removeUser(uid) {
             if (store.getKeys().includes(uid)) {
                 store.unset(uid);
-                updateMemberList();
+                updateStaffList();
             }
         }
 
-        function getClientGroup(client, staffGroups) {
-            let group = undefined;
+        function updateStaffList() {
+            let list = [];
+            const keys = store.getKeys();
+            keys.forEach(key => {
+                list.push([ key, store.get(key)[0], store.get(key)[1] ]);
+            });
+
+            staffList = list;
+        }
+
+        function getStaffGroupFromClient(client, staffGroups) {
+            let group = null;
             staffGroups.forEach(staffGroup => {
-                if (isMemberOfClients(client, staffGroup.clients)) {
+                if (isStaffClient(client, staffGroup.clients) || hasStaffGroup(client, staffGroup.groups))
                     group = staffGroup;
-                } else if (isMemberOfGroups(client, staffGroup.groups)) {
-                    group = staffGroup;
-                }
             });
 
             return group;
         }
 
-        function isMemberOfClients(client, clients) {
+        function isStaffClient(client, clients) {
             return clients.includes(client.uid());
         }
 
-        function isMemberOfGroups(client, groups) {
+        function hasStaffGroup(client, groups) {
             let found = false;
             client.getServerGroups().forEach(clientGroup => {
                 if (groups.includes(clientGroup.id())) {
@@ -447,182 +468,131 @@ registerPlugin(
             return found;
         }
 
-        function getSortedMemberList() {
-            let membersOnline = [];
-            let membersAway = [];
-            let membersOffline = [];
-            memberList.forEach(member => {
-                const memberUid = member[0];
-                const client = backend.getClientByUID(memberUid);
+        function isAway(client) {
+            return (
+                client.isAway() ||
+                (awayMute && client.isMuted()) ||
+                (awayDeaf && client.isDeaf()) ||
+                (awayChannel && isInAfkChannel(client))
+            );
+        }
+
+        function isInAfkChannel(client) {
+            let found = false;
+            client.getChannels().forEach(channel => {
+                if (channel.id() === config.afkChannel) found = true;
+                return;
+            });
+
+            return found;
+        }
+
+        function getFormattedUsername(staffUser) {
+            if (clickable) {
+                return `[URL=client://0/${staffUser[0]}]${staffUser[1]}[/URL]`;
+            } else {
+                return staffUser[1];
+            }
+        }
+
+        function getFormattedUserLine(name, status) {
+            // 0 = online, 1 = away, 2 = offline
+            let formattedName = '';
+            if (template) {
+                formattedName = userLine.replace('%name%', username.replace('%name%', name)).replace('%lb%', '\n');
+            } else {
+                formattedName = `${name} - %status%`;
+            }
+
+            switch (status) {
+                case 0:
+                    formattedName = formattedName.replace('%status%', phraseOnline);
+                    break;
+                case 1:
+                    formattedName = formattedName.replace('%status%', phraseAway);
+                    break;
+                case 2:
+                    formattedName = formattedName.replace('%status%', phraseOffline);
+                    break;
+            }
+
+            return formattedName;
+        }
+
+        function getSortedStaffList() {
+            let staffOnline = [];
+            let staffAway = [];
+            let staffOffline = [];
+            staffList.forEach(staffUser => {
+                const client = backend.getClientByUID(staffUser[0]);
                 if (client !== undefined) {
-                    if (config.template) {
-                        if (config.tAway == 0) {
-                            let away = false;
-                            if (client.isAway()) away = true;
-                            if (config.tAwayMute == 0 && client.isMuted()) away = true;
-                            if (config.tAwayDeaf == 0 && client.isDeaf()) away = true;
-                            if (away) {
-                                membersAway.push(member);
-                            } else {
-                                membersOnline.push(member);
-                            }
+                    if (away) {
+                        if (isAway(client)) {
+                            staffAway.push(staffUser);
                         } else {
-                            membersOnline.push(member);
+                            staffOnline.push(staffUser);
                         }
                     } else {
-                        if (config.away == 0) {
-                            let away = false;
-                            if (client.isAway()) away = true;
-                            if (config.awayMute == 0 && client.isMuted()) away = true;
-                            if (config.awayDeaf == 0 && client.isDeaf()) away = true;
-                            if (away) {
-                                membersAway.push(member);
-                            } else {
-                                membersOnline.push(member);
-                            }
-                        } else {
-                            membersOnline.push(member);
-                        }
+                        staffOnline.push(staffUser);
                     }
                 } else {
-                    membersOffline.push(member);
+                    staffOffline.push(staffUser);
                 }
             });
-            membersOnline.sort((a, b) => {
+            staffOnline.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
-            membersAway.sort((a, b) => {
+            staffAway.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
-            membersOffline.sort((a, b) => {
+            staffOffline.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
 
-            return [ membersOnline, membersAway, membersOffline ];
+            return [ staffOnline, staffAway, staffOffline ];
         }
 
         function updateDescription(staffGroups, channel) {
-            const template = config.template == 0;
-            const clickable = config.clickable == 0;
-            let username, memberLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
-
-            if (config.template == 0) {
-                username = config.tUsername || '[B]%name%[/B]';
-                memberLine = config.tMemberLine || '%name% [COLOR=#aaff00]>[/COLOR] %status%';
-                groupSection = config.tGroupSection || '[center]%group%\n%members%____________________[/center]';
-                phraseOnline = config.tPhraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
-                phraseAway = config.tPhraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
-                phraseOffline = config.tPhraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
-            } else {
-                separator = config.separator || '_______________________________________';
-                phraseOnline = config.phraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
-                phraseAway = config.phraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
-                phraseOffline = config.phraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
-            }
-
-            const sortedMemberList = getSortedMemberList();
-            const membersOnline = sortedMemberList[0];
-            const membersAway = sortedMemberList[1];
-            const membersOffline = sortedMemberList[2];
+            const [ staffOnline, staffAway, staffOffline ] = getSortedStaffList();
             let description = '';
-
             staffGroups.forEach(staffGroup => {
-                let membersToList = '';
-                membersOnline.forEach(member => {
-                    const memberUid = member[0];
-                    const memberNick = member[1];
-                    const memberGroup = member[2];
-
-                    if (staffGroup.id === memberGroup) {
-                        let memberName = '';
-                        if (clickable) {
-                            memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                        } else {
-                            memberName = `${memberNick}`;
-                        }
-
-                        let memberToList = '';
-                        if (template) {
-                            memberToList = memberLine
-                                .replace('%name%', username.replace('%name%', memberName))
-                                .replace('%status%', phraseOnline)
-                                .replace('%lb%', '\n');
-                        } else {
-                            memberToList = `${memberName} - ${phraseOnline}`;
-                        }
-
-                        membersToList += `${memberToList}\n`;
+                let staffUsersToList = '';
+                staffOnline.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 0);
+                        staffUsersToList += `${staffUserToList}\n`;
                     }
                 });
-                if (config.away == 0 || config.taway == 0) {
-                    membersAway.forEach(member => {
-                        const memberUid = member[0];
-                        const memberNick = member[1];
-                        const memberGroup = member[2];
-
-                        if (staffGroup.id === memberGroup) {
-                            let memberName = '';
-                            if (clickable) {
-                                memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                            } else {
-                                memberName = `${memberNick}`;
-                            }
-
-                            let memberToList = '';
-                            if (template) {
-                                memberToList = memberLine
-                                    .replace('%name%', username.replace('%name%', memberName))
-                                    .replace('%status%', phraseAway)
-                                    .replace('%lb%', '\n');
-                            } else {
-                                memberToList = `${memberName} - ${phraseAway}`;
-                            }
-
-                            membersToList += `${memberToList}\n`;
-                        }
-                    });
-                }
-                membersOffline.forEach(member => {
-                    const memberUid = member[0];
-                    const memberNick = member[1];
-                    const memberGroup = member[2];
-
-                    if (staffGroup.id === memberGroup) {
-                        let memberName = '';
-                        if (clickable) {
-                            memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                        } else {
-                            memberName = `${memberNick}`;
-                        }
-
-                        let memberToList = '';
-                        if (template) {
-                            memberToList = memberLine
-                                .replace('%name%', username.replace('%name%', memberName))
-                                .replace('%status%', phraseOffline)
-                                .replace('%lb%', '\n');
-                        } else {
-                            memberToList = `${memberName} - ${phraseOffline}`;
-                        }
-
-                        membersToList += `${memberToList}\n`;
+                staffAway.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 1);
+                        staffUsersToList += `${staffUserToList}\n`;
+                    }
+                });
+                staffOffline.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 2);
+                        staffUsersToList += `${staffUserToList}\n`;
                     }
                 });
 
-                if (membersToList !== '') {
+                if (staffUsersToList !== '') {
                     if (template) {
                         description += groupSection
                             .replace('%group%', staffGroup.name)
-                            .replace('%members%', membersToList.substring(0, membersToList.length - 1))
+                            .replace('%users%', staffUsersToList.substring(0, staffUsersToList.length - 1))
                             .replace('%lb%', '\n');
                     } else {
-                        description += `${staffGroup.name}\n${membersToList}${separator}\n`;
+                        description += `${staffGroup.name}\n${staffUsersToList}${separator}\n`;
                     }
                 }
             });
@@ -631,29 +601,52 @@ registerPlugin(
             channel.setDescription(description);
         }
 
+        // LOADING EVENT
+        event.on('load', () => {
+            if (config.channel === undefined) {
+                log('There was no channel selected to display the staff list! Deactivating script...');
+                return;
+            } else if (awayChannel && config.afkChannel === undefined) {
+                log(
+                    'There was no afk channel selected although the afk channel option is enabled! Deactivating the script...'
+                );
+                return;
+            } else if (config.staffGroups === undefined || config.staffGroups.length === 0) {
+                log('There are no staff groups configured to be displayed in the staff list! Deactivating script...');
+                return;
+            } else {
+                log('The script has loaded successfully!');
+
+                // start the script
+                waitForBackend().then(() => {
+                    main();
+                });
+            }
+        });
+
         // MAIN FUNCTION
         function main() {
             // VARIABLES
-            const staffGroups = validateListGroups();
+            const staffGroups = validateStaffGroups();
             const channel = backend.getChannelByID(config.channel);
 
             // validate database
             validateDatabase();
 
-            // store all online listed members
+            // store all online listed staff users
             backend.getClients().forEach(client => {
-                const staffGroup = getClientGroup(client, staffGroups);
-                if (staffGroup !== undefined) {
-                    storeMember(client.uid(), client.nick(), staffGroup.id);
+                const staffGroup = getStaffGroupFromClient(client, staffGroups);
+                if (staffGroup !== null) {
+                    storeUser(client.uid(), client.nick(), staffGroup.id);
                 } else {
-                    removeMember(client.uid());
+                    removeUser(client.uid());
                 }
             });
 
             // update the cached member list
-            updateMemberList();
+            updateStaffList();
 
-            // update the description for all currently known users
+            // update the description for all currently known staff users
             updateDescription(staffGroups, channel);
 
             // MOVE EVENT
@@ -664,102 +657,82 @@ registerPlugin(
                 const toChannel = event.toChannel;
                 const uid = client.uid();
                 const nick = client.nick();
-                const group = getClientGroup(client, staffGroups);
+                const group = getStaffGroupFromClient(client, staffGroups);
 
                 // make sure it's a user that has to be listed
-                if (group !== undefined) {
+                if (group !== null) {
                     // on connect or disconnect
                     if (fromChannel === undefined || toChannel === undefined) {
                         // make sure user is stored
-                        storeMember(uid, nick, group.id);
+                        storeUser(uid, nick, group.id);
 
                         // update the description
                         updateDescription(staffGroups, channel);
                     }
-                }
-            });
 
-            event.on('clientAway', event => {
-                if (config.away == 0 || config.taway == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
+                    // on afk channel join or leave
+                    if (
+                        awayChannel &&
+                        ((fromChannel !== undefined && fromChannel.id() === config.afkChannel) ||
+                            (toChannel !== undefined && toChannel.id() === config.afkChannel))
+                    ) {
                         updateDescription(staffGroups, channel);
                     }
                 }
             });
 
-            event.on('clientBack', event => {
-                if (config.away == 0 || config.taway == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // AFK EVENT
+            event.on('clientAway', client => {
+                if (!away) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientMute', event => {
-                if (config.awayMute == 0 || config.tawayMute == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UN-AFK EVENT
+            event.on('clientBack', client => {
+                if (!away) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientUnmute', event => {
-                if (config.awayMute == 0 || config.tawayMute == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // MUTE EVENT
+            event.on('clientMute', client => {
+                if (!away) return;
+                if (!awayMute) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientDeaf', event => {
-                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UNMUTE EVENT
+            event.on('clientUnmute', client => {
+                if (!away) return;
+                if (!awayMute) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientUndeaf', event => {
-                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
+            // DEAF EVENT
+            event.on('clientDeaf', client => {
+                if (!away) return;
+                if (!awayDeaf) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
+            });
 
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UNDEAF EVENT
+            event.on('clientUndeaf', client => {
+                if (!away) return;
+                if (!awayDeaf) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
             // SERVER GROUP ADDED EVENT
             event.on('serverGroupAdded', event => {
                 const client = event.client;
                 if (client.isSelf()) return;
-                const eventGroup = event.serverGroup.id();
-                const clientGroup = getClientGroup(client, staffGroups);
-
-                if (groupList.includes(eventGroup)) {
-                    storeMember(client.uid(), client.nick(), clientGroup.id);
+                if (groupList.includes(event.serverGroup.id())) {
+                    storeUser(client.uid(), client.nick(), getStaffGroupFromClient(client, staffGroups).id);
                     updateDescription(staffGroups, channel);
                 }
             });
@@ -768,16 +741,13 @@ registerPlugin(
             event.on('serverGroupRemoved', event => {
                 const client = event.client;
                 if (client.isSelf()) return;
-                const eventGroup = event.serverGroup.id();
-                const clientGroup = getClientGroup(client, staffGroups);
-
-                if (groupList.includes(eventGroup)) {
-                    if (clientGroup === undefined) {
-                        removeMember(client.uid());
+                const group = getStaffGroupFromClient(client, staffGroups);
+                if (groupList.includes(event.serverGroup.id())) {
+                    if (group === null) {
+                        removeUser(client.uid());
                     } else {
-                        storeMember(client.uid(), client.nick(), clientGroup.id);
+                        storeUser(client.uid(), client.nick(), group.id);
                     }
-
                     updateDescription(staffGroups, channel);
                 }
             });

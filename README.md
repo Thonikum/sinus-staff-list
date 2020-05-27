@@ -30,7 +30,6 @@
 
 
 ## **📑 Overview**
-
 This is a script for the [SinusBot]. It will automatically keep track of predefined staff members going online and offline to display this information in a specific channel description.
 
 There are a lot of options to customize the look of the description such as the default BB script to format text like in [TeamSpeak].
@@ -44,7 +43,7 @@ Additionally they are sorted automatically by online and offline and alphabetica
         <strong>Preview (click to expand)</strong>
     </summary>
 
-![preview](images/preview.png)
+![preview](images/preview_main.png)
 </details>
 
 
@@ -54,11 +53,10 @@ Additionally they are sorted automatically by online and offline and alphabetica
 2. Drop it in the scripts folder of your [SinusBot].
 3. Start/Restart the bot.
 4. Navigate to the script settings.
-5. Configure it to your liking, activate and save it and then restart the bot instance.
+5. Configure it to your liking (we recommend using [this guide][configuration]), activate and save it and then restart the bot instance.
 
 
 ## **📕 History**
-
 This script was requested by [Mortis].
 
 
@@ -76,6 +74,7 @@ This project is licensed under the [MIT License].
 [Marketplace]: https://forum.sinusbot.com/resources/staff-list.497/
 [TeamSpeak]:https://www.teamspeak.com/
 [releases]: https://github.com/RLNT/sinus-staff-list/releases
+[configuration]: CONFIGURATION.md
 [Mortis]: https://forum.sinusbot.com/members/mortis.78202/
 [changelog]: CHANGELOG.md
 [MIT License]: LICENSE.md
