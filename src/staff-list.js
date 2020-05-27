@@ -18,40 +18,117 @@ registerPlugin(
                 title: 'All fields that are marked with (*) are required!'
             },
             {
-                name: 'format',
-                title: 'You can use the normal BB code to format your text like in TeamSpeak.'
-            },
-            {
-                name: 'priority',
-                title:
-                    'The order in which you define the groups is important! The script will go from top to bottom and overwrite each group so the last group you defined has the highest priority. Should a user be a member of two groups, they will only be displayed in the last one.'
-            },
-            {
                 name: 'functionality',
                 title:
-                    "The script stores usernames from people that should be listed. Each user that needs to appear in the list has to join the server atleast once while the script is running. If the script doesn't have any stored members for a specific group yet, it will not be displayed."
+                    "The script stores usernames from people that should of the staff groups. Each user you want to list has to join the server at least once while the script is running. If the script doesn't have any stored users for a specific group yet, it will not be displayed."
+            },
+            {
+                name: 'configuration',
+                title: 'A guide how to configure the script to your needs can be found here: ' // TODO
+            },
+            {
+                name: 'spacer0',
+                title: ''
+            },
+            {
+                name: 'header0',
+                title: '->>> General Options <<<-'
             },
             {
                 name: 'channel',
-                title: 'The channel where the staff list should be shown in. (*)',
+                title: 'Display-Channel > Define the channel where the staff list should be shown in! (*)',
                 type: 'channel'
             },
             {
                 name: 'clickable',
-                title: 'Do you want the usernames in the list to be clickable (hyperlinks)?',
+                title:
+                    'Clickable-Names > Do you want the usernames in the list to be clickable? They work like hyperlinks then.',
                 type: 'select',
-                options: [ 'Hyperlink (clickable)', 'Plain Text' ]
+                options: [ 'Yes', 'No' ]
+            },
+            {
+                name: 'away',
+                title: 'Away-Status > Do you want a third status (besides online & offline) if someone is away/afk?',
+                type: 'select',
+                options: [ 'Yes', 'No' ]
+            },
+            {
+                name: 'awayChannel',
+                title: 'Away-Channel > Do you want to set someone away/afk if they join an afk channel?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'afkChannel',
+                title: 'AFK-Channel > Define the afk channel! (*)',
+                type: 'channel',
+                indent: 2,
+                conditions: [
+                    {
+                        field: 'away',
+                        value: 0
+                    },
+                    {
+                        field: 'awayChannel',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'awayMute',
+                title: 'Away-Mute > Do you want to count muted clients as away/afk?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'awayDeaf',
+                title: 'Away-Deaf > Do you want to count deaf clients as away/afk?',
+                type: 'select',
+                options: [ 'Yes', 'No' ],
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
+                name: 'spacer1',
+                title: ''
+            },
+            {
+                name: 'header1',
+                title: '->>> Text & Format Options <<<-'
+            },
+            {
+                name: 'format',
+                title: 'You can use the normal BB code to format your text like in TeamSpeak.'
             },
             {
                 name: 'template',
-                title: 'Do you want to use a custom template to format your staff list? (*) | Advanced Option',
+                title: 'Custom-Template > Do you want to use a custom template to format your staff list?',
                 type: 'select',
                 options: [ 'Yes', 'No' ]
             },
             {
                 name: 'tUsername',
                 title:
-                    'Define what the username in the list should look like. | placeholders: %name% - nickname of the user',
+                    'Username > Define what the name of a user in the list should look like! | placeholders: %name% - name of the user',
                 type: 'string',
                 placeholder: '[B]%name%[/B]',
                 indent: 1,
@@ -64,7 +141,7 @@ registerPlugin(
             },
             {
                 name: 'tPhraseOnline',
-                title: 'Define what the phrase if a user is online should look like.',
+                title: 'Online-Phrase > Define what the phrase if a user is online should look like!',
                 type: 'string',
                 placeholder: '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]',
                 indent: 1,
@@ -76,8 +153,25 @@ registerPlugin(
                 ]
             },
             {
+                name: 'tPhraseAway',
+                title: 'Away-Phrase > Define what the phrase if a user is away/afk should look like!',
+                type: 'string',
+                placeholder: '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]',
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 0
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
                 name: 'tPhraseOffline',
-                title: 'Define what the phrase if a user is offline should look like.',
+                title: 'Offline-Phrase > Define what the phrase if a user is offline should look like!',
                 type: 'string',
                 placeholder: '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]',
                 indent: 1,
@@ -91,7 +185,7 @@ registerPlugin(
             {
                 name: 'tMemberLine',
                 title:
-                    'Define what a full line in the member list should look like. | placeholders: %name% - formatted username, %status% - formatted online status, %lb% - line break',
+                    'User-Line > Define what a full line in the member list should look like! | placeholders: %name% - formatted username, %status% - formatted status phrase, %lb% - line break',
                 type: 'multiline',
                 placeholder: '%name% [COLOR=#aaff00]>[/COLOR] %status%',
                 indent: 1,
@@ -105,9 +199,9 @@ registerPlugin(
             {
                 name: 'tGroupSection',
                 title:
-                    'Define what a group section should look like. | placeholders: %group% - formatted group name, %members% - formatted member lines, %lb% - line break',
+                    'Group-Section > Define what a group section should look like! | placeholders: %group% - formatted group name, %users% - formatted member list, %lb% - line break',
                 type: 'multiline',
-                placeholder: '[center]%group%\n%members%\n____________________\n[/center]\n%lb%',
+                placeholder: '[center]> %group% <\n%users%\n____________________\n[/center]%lb%',
                 indent: 1,
                 conditions: [
                     {
@@ -118,7 +212,7 @@ registerPlugin(
             },
             {
                 name: 'separator',
-                title: 'The separator that should separate the groups in the channel.',
+                title: 'Separator > Define what the separator between each group section should look like!',
                 type: 'multiline',
                 placeholder: '_______________________________________',
                 indent: 1,
@@ -131,7 +225,7 @@ registerPlugin(
             },
             {
                 name: 'phraseOnline',
-                title: 'The phrase that should be shown if the corresponding user is online.',
+                title: 'Online-Phrase > Define what the phrase if a user is online should look like!',
                 type: 'string',
                 placeholder: '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]',
                 indent: 1,
@@ -143,8 +237,25 @@ registerPlugin(
                 ]
             },
             {
+                name: 'phraseAway',
+                title: 'Away-Phrase > Define what the phrase if a user is away/afk should look like!',
+                type: 'string',
+                placeholder: '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]',
+                indent: 1,
+                conditions: [
+                    {
+                        field: 'template',
+                        value: 1
+                    },
+                    {
+                        field: 'away',
+                        value: 0
+                    }
+                ]
+            },
+            {
                 name: 'phraseOffline',
-                title: 'The phrase that should be shown if the corresponding user is offline.',
+                title: 'Offline-Phrase > Define what the phrase if a user is offline should look like!',
                 type: 'string',
                 placeholder: '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]',
                 indent: 1,
@@ -156,13 +267,26 @@ registerPlugin(
                 ]
             },
             {
+                name: 'spacer2',
+                title: ''
+            },
+            {
+                name: 'header2',
+                title: '->>> Group Options <<<-'
+            },
+            {
+                name: 'priority',
+                title:
+                    'The order in which you define the groups is important! The script will go from top to bottom and overwrite each group so the last group you defined has the highest priority. Should a user be a member of two groups, they will only be displayed in the last one.'
+            },
+            {
                 name: 'staffGroups',
-                title: 'Staff Groups',
+                title: 'Staff Groups List',
                 type: 'array',
                 vars: [
                     {
                         name: 'id',
-                        title: 'The ID of the group. (*)',
+                        title: 'ID > Define the ID of the staff group! (*)',
                         indent: 2,
                         type: 'string',
                         placeholder: '1337'
@@ -170,20 +294,22 @@ registerPlugin(
                     {
                         name: 'name',
                         title:
-                            'The name that should be shown for the group. If not set, it will use the default group name.',
+                            'Name > Define the name that should be shown for the group! If not set it will use the default group name.',
                         indent: 2,
                         type: 'multiline',
                         placeholder: '[COLOR=#aa007f][size=12][B]ADMIN[/B][/size][/COLOR]'
                     },
                     {
                         name: 'clients',
-                        title: 'A list of additional clients IDs that should also count towards that group.',
+                        title:
+                            'Clients > Define a list of additional clients IDs that should also count towards this staff group!',
                         indent: 2,
                         type: 'strings'
                     },
                     {
                         name: 'groups',
-                        title: 'A list of additional group IDs that should also count towards that group.',
+                        title:
+                            'Groups > Define a list of additional group IDs that should also count towards this staff group!',
                         indent: 2,
                         type: 'strings'
                     }
@@ -323,16 +449,51 @@ registerPlugin(
 
         function getSortedMemberList() {
             let membersOnline = [];
+            let membersAway = [];
             let membersOffline = [];
             memberList.forEach(member => {
                 const memberUid = member[0];
-                if (backend.getClientByUID(memberUid) !== undefined) {
-                    membersOnline.push(member);
+                const client = backend.getClientByUID(memberUid);
+                if (client !== undefined) {
+                    if (config.template) {
+                        if (config.tAway == 0) {
+                            let away = false;
+                            if (client.isAway()) away = true;
+                            if (config.tAwayMute == 0 && client.isMuted()) away = true;
+                            if (config.tAwayDeaf == 0 && client.isDeaf()) away = true;
+                            if (away) {
+                                membersAway.push(member);
+                            } else {
+                                membersOnline.push(member);
+                            }
+                        } else {
+                            membersOnline.push(member);
+                        }
+                    } else {
+                        if (config.away == 0) {
+                            let away = false;
+                            if (client.isAway()) away = true;
+                            if (config.awayMute == 0 && client.isMuted()) away = true;
+                            if (config.awayDeaf == 0 && client.isDeaf()) away = true;
+                            if (away) {
+                                membersAway.push(member);
+                            } else {
+                                membersOnline.push(member);
+                            }
+                        } else {
+                            membersOnline.push(member);
+                        }
+                    }
                 } else {
                     membersOffline.push(member);
                 }
             });
             membersOnline.sort((a, b) => {
+                if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
+                if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
+                return 0;
+            });
+            membersAway.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
@@ -343,29 +504,32 @@ registerPlugin(
                 return 0;
             });
 
-            return [ membersOnline, membersOffline ];
+            return [ membersOnline, membersAway, membersOffline ];
         }
 
         function updateDescription(staffGroups, channel) {
             const template = config.template == 0;
             const clickable = config.clickable == 0;
-            let username, memberLine, groupSection, separator, phraseOnline, phraseOffline;
+            let username, memberLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
 
             if (config.template == 0) {
                 username = config.tUsername || '[B]%name%[/B]';
                 memberLine = config.tMemberLine || '%name% [COLOR=#aaff00]>[/COLOR] %status%';
                 groupSection = config.tGroupSection || '[center]%group%\n%members%____________________[/center]';
                 phraseOnline = config.tPhraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
+                phraseAway = config.tPhraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
                 phraseOffline = config.tPhraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
             } else {
                 separator = config.separator || '_______________________________________';
                 phraseOnline = config.phraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
+                phraseAway = config.phraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
                 phraseOffline = config.phraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
             }
 
             const sortedMemberList = getSortedMemberList();
             const membersOnline = sortedMemberList[0];
-            const membersOffline = sortedMemberList[1];
+            const membersAway = sortedMemberList[1];
+            const membersOffline = sortedMemberList[2];
             let description = '';
 
             staffGroups.forEach(staffGroup => {
@@ -396,6 +560,34 @@ registerPlugin(
                         membersToList += `${memberToList}\n`;
                     }
                 });
+                if (config.away == 0 || config.taway == 0) {
+                    membersAway.forEach(member => {
+                        const memberUid = member[0];
+                        const memberNick = member[1];
+                        const memberGroup = member[2];
+
+                        if (staffGroup.id === memberGroup) {
+                            let memberName = '';
+                            if (clickable) {
+                                memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
+                            } else {
+                                memberName = `${memberNick}`;
+                            }
+
+                            let memberToList = '';
+                            if (template) {
+                                memberToList = memberLine
+                                    .replace('%name%', username.replace('%name%', memberName))
+                                    .replace('%status%', phraseAway)
+                                    .replace('%lb%', '\n');
+                            } else {
+                                memberToList = `${memberName} - ${phraseAway}`;
+                            }
+
+                            membersToList += `${memberToList}\n`;
+                        }
+                    });
+                }
                 membersOffline.forEach(member => {
                     const memberUid = member[0];
                     const memberNick = member[1];
@@ -482,6 +674,78 @@ registerPlugin(
                         storeMember(uid, nick, group.id);
 
                         // update the description
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientAway', event => {
+                if (config.away == 0 || config.taway == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientBack', event => {
+                if (config.away == 0 || config.taway == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientMute', event => {
+                if (config.awayMute == 0 || config.tawayMute == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientUnmute', event => {
+                if (config.awayMute == 0 || config.tawayMute == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientDeaf', event => {
+                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
+                        updateDescription(staffGroups, channel);
+                    }
+                }
+            });
+
+            event.on('clientUndeaf', event => {
+                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
+                    const client = event.client;
+                    if (client.isSelf()) return;
+                    const group = getClientGroup(client, staffGroups);
+
+                    if (group !== undefined) {
                         updateDescription(staffGroups, channel);
                     }
                 }
