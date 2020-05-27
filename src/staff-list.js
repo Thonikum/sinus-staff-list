@@ -381,8 +381,7 @@ registerPlugin(
             });
         }
 
-        // FUNCTIONS
-        function validateListGroups() {
+        function validateStaffGroups() {
             let staffGroups = [];
 
             config.staffGroups.forEach(group => {
@@ -407,21 +406,11 @@ registerPlugin(
 
         function validateDatabase() {
             store.getKeys().forEach(key => {
-                if (!groupList.includes(store.get(key)[1])) removeMember(key);
+                if (!groupList.includes(store.get(key)[1])) removeUser(key);
             });
         }
 
-        function updateMemberList() {
-            let list = [];
-            const keys = store.getKeys();
-            keys.forEach(key => {
-                list.push([ key, store.get(key)[0], store.get(key)[1] ]);
-            });
-
-            memberList = list;
-        }
-
-        function storeMember(uid, nick, group) {
+        function storeUser(uid, nick, group) {
             if (!store.getKeys().includes(uid)) {
                 store.set(uid, [ nick, group ]);
             } else if (store.get(uid)[0] !== nick) {
@@ -431,34 +420,41 @@ registerPlugin(
                 store.unset(uid);
                 store.set(uid, [ nick, group ]);
             }
-            updateMemberList();
+            updateStaffList();
         }
 
-        function removeMember(uid) {
+        function removeUser(uid) {
             if (store.getKeys().includes(uid)) {
                 store.unset(uid);
-                updateMemberList();
+                updateStaffList();
             }
         }
 
-        function getClientGroup(client, staffGroups) {
-            let group = undefined;
+        function updateStaffList() {
+            let list = [];
+            const keys = store.getKeys();
+            keys.forEach(key => {
+                list.push([ key, store.get(key)[0], store.get(key)[1] ]);
+            });
+
+            staffList = list;
+        }
+
+        function getStaffGroupFromClient(client, staffGroups) {
+            let group = null;
             staffGroups.forEach(staffGroup => {
-                if (isMemberOfClients(client, staffGroup.clients)) {
+                if (isStaffClient(client, staffGroup.clients) || hasStaffGroup(client, staffGroup.groups))
                     group = staffGroup;
-                } else if (isMemberOfGroups(client, staffGroup.groups)) {
-                    group = staffGroup;
-                }
             });
 
             return group;
         }
 
-        function isMemberOfClients(client, clients) {
+        function isStaffClient(client, clients) {
             return clients.includes(client.uid());
         }
 
-        function isMemberOfGroups(client, groups) {
+        function hasStaffGroup(client, groups) {
             let found = false;
             client.getServerGroups().forEach(clientGroup => {
                 if (groups.includes(clientGroup.id())) {
@@ -469,182 +465,131 @@ registerPlugin(
             return found;
         }
 
-        function getSortedMemberList() {
-            let membersOnline = [];
-            let membersAway = [];
-            let membersOffline = [];
-            memberList.forEach(member => {
-                const memberUid = member[0];
-                const client = backend.getClientByUID(memberUid);
+        function isAway(client) {
+            return (
+                client.isAway() ||
+                (awayMute && client.isMuted()) ||
+                (awayDeaf && client.isDeaf()) ||
+                (awayChannel && isInAfkChannel(client))
+            );
+        }
+
+        function isInAfkChannel(client) {
+            let found = false;
+            client.getChannels().forEach(channel => {
+                if (channel.id() === config.afkChannel) found = true;
+                return;
+            });
+
+            return found;
+        }
+
+        function getFormattedUsername(staffUser) {
+            if (clickable) {
+                return `[URL=client://0/${staffUser[0]}]${staffUser[1]}[/URL]`;
+            } else {
+                return staffUser[1];
+            }
+        }
+
+        function getFormattedUserLine(name, status) {
+            // 0 = online, 1 = away, 2 = offline
+            let formattedName = '';
+            if (template) {
+                formattedName = userLine.replace('%name%', username.replace('%name%', name)).replace('%lb%', '\n');
+            } else {
+                formattedName = `${name} - %status%`;
+            }
+
+            switch (status) {
+                case 0:
+                    formattedName = formattedName.replace('%status%', phraseOnline);
+                    break;
+                case 1:
+                    formattedName = formattedName.replace('%status%', phraseAway);
+                    break;
+                case 2:
+                    formattedName = formattedName.replace('%status%', phraseOffline);
+                    break;
+            }
+
+            return formattedName;
+        }
+
+        function getSortedStaffList() {
+            let staffOnline = [];
+            let staffAway = [];
+            let staffOffline = [];
+            staffList.forEach(staffUser => {
+                const client = backend.getClientByUID(staffUser[0]);
                 if (client !== undefined) {
-                    if (config.template) {
-                        if (config.tAway == 0) {
-                            let away = false;
-                            if (client.isAway()) away = true;
-                            if (config.tAwayMute == 0 && client.isMuted()) away = true;
-                            if (config.tAwayDeaf == 0 && client.isDeaf()) away = true;
-                            if (away) {
-                                membersAway.push(member);
-                            } else {
-                                membersOnline.push(member);
-                            }
+                    if (away) {
+                        if (isAway(client)) {
+                            staffAway.push(staffUser);
                         } else {
-                            membersOnline.push(member);
+                            staffOnline.push(staffUser);
                         }
                     } else {
-                        if (config.away == 0) {
-                            let away = false;
-                            if (client.isAway()) away = true;
-                            if (config.awayMute == 0 && client.isMuted()) away = true;
-                            if (config.awayDeaf == 0 && client.isDeaf()) away = true;
-                            if (away) {
-                                membersAway.push(member);
-                            } else {
-                                membersOnline.push(member);
-                            }
-                        } else {
-                            membersOnline.push(member);
-                        }
+                        staffOnline.push(staffUser);
                     }
                 } else {
-                    membersOffline.push(member);
+                    staffOffline.push(staffUser);
                 }
             });
-            membersOnline.sort((a, b) => {
+            staffOnline.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
-            membersAway.sort((a, b) => {
+            staffAway.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
-            membersOffline.sort((a, b) => {
+            staffOffline.sort((a, b) => {
                 if (a[1].toLowerCase() < b[1].toLowerCase()) return -1;
                 if (a[1].toLowerCase() > b[1].toLowerCase()) return 1;
                 return 0;
             });
 
-            return [ membersOnline, membersAway, membersOffline ];
+            return [ staffOnline, staffAway, staffOffline ];
         }
 
         function updateDescription(staffGroups, channel) {
-            const template = config.template == 0;
-            const clickable = config.clickable == 0;
-            let username, memberLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
-
-            if (config.template == 0) {
-                username = config.tUsername || '[B]%name%[/B]';
-                memberLine = config.tMemberLine || '%name% [COLOR=#aaff00]>[/COLOR] %status%';
-                groupSection = config.tGroupSection || '[center]%group%\n%members%____________________[/center]';
-                phraseOnline = config.tPhraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
-                phraseAway = config.tPhraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
-                phraseOffline = config.tPhraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
-            } else {
-                separator = config.separator || '_______________________________________';
-                phraseOnline = config.phraseOnline || '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]';
-                phraseAway = config.phraseAway || '[COLOR=#c8c8c8][B]ONLINE[/B][/COLOR]';
-                phraseOffline = config.phraseOffline || '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]';
-            }
-
-            const sortedMemberList = getSortedMemberList();
-            const membersOnline = sortedMemberList[0];
-            const membersAway = sortedMemberList[1];
-            const membersOffline = sortedMemberList[2];
+            const [ staffOnline, staffAway, staffOffline ] = getSortedStaffList();
             let description = '';
-
             staffGroups.forEach(staffGroup => {
-                let membersToList = '';
-                membersOnline.forEach(member => {
-                    const memberUid = member[0];
-                    const memberNick = member[1];
-                    const memberGroup = member[2];
-
-                    if (staffGroup.id === memberGroup) {
-                        let memberName = '';
-                        if (clickable) {
-                            memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                        } else {
-                            memberName = `${memberNick}`;
-                        }
-
-                        let memberToList = '';
-                        if (template) {
-                            memberToList = memberLine
-                                .replace('%name%', username.replace('%name%', memberName))
-                                .replace('%status%', phraseOnline)
-                                .replace('%lb%', '\n');
-                        } else {
-                            memberToList = `${memberName} - ${phraseOnline}`;
-                        }
-
-                        membersToList += `${memberToList}\n`;
+                let staffUsersToList = '';
+                staffOnline.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 0);
+                        staffUsersToList += `${staffUserToList}\n`;
                     }
                 });
-                if (config.away == 0 || config.taway == 0) {
-                    membersAway.forEach(member => {
-                        const memberUid = member[0];
-                        const memberNick = member[1];
-                        const memberGroup = member[2];
-
-                        if (staffGroup.id === memberGroup) {
-                            let memberName = '';
-                            if (clickable) {
-                                memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                            } else {
-                                memberName = `${memberNick}`;
-                            }
-
-                            let memberToList = '';
-                            if (template) {
-                                memberToList = memberLine
-                                    .replace('%name%', username.replace('%name%', memberName))
-                                    .replace('%status%', phraseAway)
-                                    .replace('%lb%', '\n');
-                            } else {
-                                memberToList = `${memberName} - ${phraseAway}`;
-                            }
-
-                            membersToList += `${memberToList}\n`;
-                        }
-                    });
-                }
-                membersOffline.forEach(member => {
-                    const memberUid = member[0];
-                    const memberNick = member[1];
-                    const memberGroup = member[2];
-
-                    if (staffGroup.id === memberGroup) {
-                        let memberName = '';
-                        if (clickable) {
-                            memberName = `[URL=client://0/${memberUid}]${memberNick}[/URL]`;
-                        } else {
-                            memberName = `${memberNick}`;
-                        }
-
-                        let memberToList = '';
-                        if (template) {
-                            memberToList = memberLine
-                                .replace('%name%', username.replace('%name%', memberName))
-                                .replace('%status%', phraseOffline)
-                                .replace('%lb%', '\n');
-                        } else {
-                            memberToList = `${memberName} - ${phraseOffline}`;
-                        }
-
-                        membersToList += `${memberToList}\n`;
+                staffAway.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 1);
+                        staffUsersToList += `${staffUserToList}\n`;
+                    }
+                });
+                staffOffline.forEach(staffUser => {
+                    if (staffGroup.id === staffUser[2]) {
+                        const staffUserFormatted = getFormattedUsername(staffUser);
+                        const staffUserToList = getFormattedUserLine(staffUserFormatted, 2);
+                        staffUsersToList += `${staffUserToList}\n`;
                     }
                 });
 
-                if (membersToList !== '') {
+                if (staffUsersToList !== '') {
                     if (template) {
                         description += groupSection
                             .replace('%group%', staffGroup.name)
-                            .replace('%members%', membersToList.substring(0, membersToList.length - 1))
+                            .replace('%users%', staffUsersToList.substring(0, staffUsersToList.length - 1))
                             .replace('%lb%', '\n');
                     } else {
-                        description += `${staffGroup.name}\n${membersToList}${separator}\n`;
+                        description += `${staffGroup.name}\n${staffUsersToList}${separator}\n`;
                     }
                 }
             });
@@ -652,6 +597,29 @@ registerPlugin(
             // set new description to channel
             channel.setDescription(description);
         }
+
+        // LOADING EVENT
+        event.on('load', () => {
+            if (config.channel === undefined) {
+                log('There was no channel selected to display the staff list! Deactivating script...');
+                return;
+            } else if (awayChannel && config.afkChannel === undefined) {
+                log(
+                    'There was no afk channel selected although the afk channel option is enabled! Deactivating the script...'
+                );
+                return;
+            } else if (config.staffGroups === undefined || config.staffGroups.length === 0) {
+                log('There are no staff groups configured to be displayed in the staff list! Deactivating script...');
+                return;
+            } else {
+                log('The script has loaded successfully!');
+
+                // start the script
+                waitForBackend().then(() => {
+                    main();
+                });
+            }
+        });
 
         // MAIN FUNCTION
         function main() {
