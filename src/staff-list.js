@@ -326,10 +326,38 @@ registerPlugin(
 
         // GLOBAL VARS
         const prefix = 'Staff-List';
-        let memberList = [];
+        let staffList = [];
         let groupList = [];
 
-        // GLOBAL FUNCTIONS
+        const template = varDef(config.template, 1) == 0;
+        const clickable = varDef(config.clickable, 0) == 0;
+        const away = varDef(config.away, 1) == 0;
+        let awayChannel, awayMute, awayDeaf;
+        if (away) {
+            awayChannel = varDef(config.awayChannel, 1) == 0;
+            awayMute = varDef(config.awayMute, 1) == 0;
+            awayDeaf = varDef(config.awayDeaf, 1) == 0;
+        } else {
+            awayChannel = false;
+            awayMute = false;
+            awayDeaf = false;
+        }
+        let username, userLine, groupSection, separator, phraseOnline, phraseAway, phraseOffline;
+        if (template) {
+            username = varDef(config.tUsername, '[B]%name%[/B]');
+            userLine = varDef(config.tMemberLine, '%name% [COLOR=#aaff00]>[/COLOR] %status%');
+            groupSection = varDef(config.tGroupSection, '[center]%group%\n%users%____________________[/center]');
+            phraseOnline = varDef(config.tPhraseOnline, '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]');
+            phraseAway = varDef(config.tPhraseAway, '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]');
+            phraseOffline = varDef(config.tPhraseOffline, '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]');
+        } else {
+            separator = varDef(config.separator, '_______________________________________');
+            phraseOnline = varDef(config.phraseOnline, '[COLOR=#00ff00][B]ONLINE[/B][/COLOR]');
+            phraseAway = varDef(config.phraseAway, '[COLOR=#c8c8c8][B]AWAY[/B][/COLOR]');
+            phraseOffline = varDef(config.phraseOffline, '[COLOR=#ff0000][B]OFFLINE[/B][/COLOR]');
+        }
+
+        // FUNCTIONS
         function log(message) {
             engine.log(prefix + ' > ' + message);
         }
