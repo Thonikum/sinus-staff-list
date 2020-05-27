@@ -362,30 +362,24 @@ registerPlugin(
             engine.log(prefix + ' > ' + message);
         }
 
-        function waitForBackend() {
-            if (backend.isConnected()) {
-                main();
+        function varDef(v, defVal) {
+            if (v === undefined || v === null || v === '') {
+                return defVal;
             } else {
-                setTimeout(waitForBackend, 2000);
+                return v;
             }
         }
 
-        // LOADING EVENT
-        event.on('load', () => {
-            if (config.channel === undefined) {
-                log('There was no channel selected to display the staff list. Deactivating script...');
-                return;
-            } else if (config.staffGroups === undefined || config.staffGroups.length === 0) {
-                log('There are no staff groups selected to be displayed in the staff list. Deactivating script...');
-                return;
-            } else if (config.template === undefined) {
-                log('There was no formatting option selected. Deactivating script...');
-                return;
-            } else {
-                log('The script has loaded successfully!');
-                waitForBackend();
-            }
-        });
+        function waitForBackend() {
+            return new Promise(done => {
+                const timer = setInterval(() => {
+                    if (backend.isConnected()) {
+                        clearInterval(timer);
+                        done();
+                    }
+                }, 1000);
+            });
+        }
 
         // FUNCTIONS
         function validateListGroups() {
