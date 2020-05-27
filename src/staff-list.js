@@ -9,7 +9,7 @@
 registerPlugin(
     {
         name: 'Staff List',
-        version: '1.2.0',
+        version: '1.3.0',
         description:
             'With this script, the bot will automatically keep track of the online status of predefined staff members and post it to a chosen channel description.',
         author: 'RLNT',
