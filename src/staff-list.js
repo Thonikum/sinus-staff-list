@@ -624,26 +624,26 @@ registerPlugin(
         // MAIN FUNCTION
         function main() {
             // VARIABLES
-            const staffGroups = validateListGroups();
+            const staffGroups = validateStaffGroups();
             const channel = backend.getChannelByID(config.channel);
 
             // validate database
             validateDatabase();
 
-            // store all online listed members
+            // store all online listed staff users
             backend.getClients().forEach(client => {
-                const staffGroup = getClientGroup(client, staffGroups);
-                if (staffGroup !== undefined) {
-                    storeMember(client.uid(), client.nick(), staffGroup.id);
+                const staffGroup = getStaffGroupFromClient(client, staffGroups);
+                if (staffGroup !== null) {
+                    storeUser(client.uid(), client.nick(), staffGroup.id);
                 } else {
-                    removeMember(client.uid());
+                    removeUser(client.uid());
                 }
             });
 
             // update the cached member list
-            updateMemberList();
+            updateStaffList();
 
-            // update the description for all currently known users
+            // update the description for all currently known staff users
             updateDescription(staffGroups, channel);
 
             // MOVE EVENT
@@ -654,102 +654,82 @@ registerPlugin(
                 const toChannel = event.toChannel;
                 const uid = client.uid();
                 const nick = client.nick();
-                const group = getClientGroup(client, staffGroups);
+                const group = getStaffGroupFromClient(client, staffGroups);
 
                 // make sure it's a user that has to be listed
-                if (group !== undefined) {
+                if (group !== null) {
                     // on connect or disconnect
                     if (fromChannel === undefined || toChannel === undefined) {
                         // make sure user is stored
-                        storeMember(uid, nick, group.id);
+                        storeUser(uid, nick, group.id);
 
                         // update the description
                         updateDescription(staffGroups, channel);
                     }
-                }
-            });
 
-            event.on('clientAway', event => {
-                if (config.away == 0 || config.taway == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
+                    // on afk channel join or leave
+                    if (
+                        awayChannel &&
+                        ((fromChannel !== undefined && fromChannel.id() === config.afkChannel) ||
+                            (toChannel !== undefined && toChannel.id() === config.afkChannel))
+                    ) {
                         updateDescription(staffGroups, channel);
                     }
                 }
             });
 
-            event.on('clientBack', event => {
-                if (config.away == 0 || config.taway == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // AFK EVENT
+            event.on('clientAway', client => {
+                if (!away) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientMute', event => {
-                if (config.awayMute == 0 || config.tawayMute == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UN-AFK EVENT
+            event.on('clientBack', client => {
+                if (!away) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientUnmute', event => {
-                if (config.awayMute == 0 || config.tawayMute == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // MUTE EVENT
+            event.on('clientMute', client => {
+                if (!away) return;
+                if (!awayMute) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientDeaf', event => {
-                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
-
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UNMUTE EVENT
+            event.on('clientUnmute', client => {
+                if (!away) return;
+                if (!awayMute) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
-            event.on('clientUndeaf', event => {
-                if (config.awayDeaf == 0 || config.tawayDeaf == 0) {
-                    const client = event.client;
-                    if (client.isSelf()) return;
-                    const group = getClientGroup(client, staffGroups);
+            // DEAF EVENT
+            event.on('clientDeaf', client => {
+                if (!away) return;
+                if (!awayDeaf) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
+            });
 
-                    if (group !== undefined) {
-                        updateDescription(staffGroups, channel);
-                    }
-                }
+            // UNDEAF EVENT
+            event.on('clientUndeaf', client => {
+                if (!away) return;
+                if (!awayDeaf) return;
+                if (client.isSelf()) return;
+                if (getStaffGroupFromClient(client, staffGroups) !== null) updateDescription(staffGroups, channel);
             });
 
             // SERVER GROUP ADDED EVENT
             event.on('serverGroupAdded', event => {
                 const client = event.client;
                 if (client.isSelf()) return;
-                const eventGroup = event.serverGroup.id();
-                const clientGroup = getClientGroup(client, staffGroups);
-
-                if (groupList.includes(eventGroup)) {
-                    storeMember(client.uid(), client.nick(), clientGroup.id);
+                if (groupList.includes(event.serverGroup.id())) {
+                    storeUser(client.uid(), client.nick(), getStaffGroupFromClient(client, staffGroups).id);
                     updateDescription(staffGroups, channel);
                 }
             });
@@ -758,16 +738,13 @@ registerPlugin(
             event.on('serverGroupRemoved', event => {
                 const client = event.client;
                 if (client.isSelf()) return;
-                const eventGroup = event.serverGroup.id();
-                const clientGroup = getClientGroup(client, staffGroups);
-
-                if (groupList.includes(eventGroup)) {
-                    if (clientGroup === undefined) {
-                        removeMember(client.uid());
+                const group = getStaffGroupFromClient(client, staffGroups);
+                if (groupList.includes(event.serverGroup.id())) {
+                    if (group === null) {
+                        removeUser(client.uid());
                     } else {
-                        storeMember(client.uid(), client.nick(), clientGroup.id);
+                        storeUser(client.uid(), client.nick(), group.id);
                     }
-
                     updateDescription(staffGroups, channel);
                 }
             });
