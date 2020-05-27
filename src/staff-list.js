@@ -24,7 +24,8 @@ registerPlugin(
             },
             {
                 name: 'configuration',
-                title: 'A guide how to configure the script to your needs can be found here: ' // TODO
+                title:
+                    'A guide how to configure the script to your needs can be found here: https://github.com/RLNT/sinus-staff-list/blob/master/CONFIGURATION.md'
             },
             {
                 name: 'spacer0',
