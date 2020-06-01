@@ -1,12 +1,12 @@
-<!-- Provide a short and clear title above -->
-
 <!--
+Provide a short and clear title above
+
 If you need help with the script, join the Discord instead!
 https://discordapp.com/invite/Q3qxws6
--->
 
-<!--
-Please split your pull requests in logical commits especially if you implemented multiple features or fixed multiple bugs.
+Please split your pull requests in logical commits especially if you implemented multiple features or fixed multiple bugs. Completely unrelated features should be split in different pull requests instead.
+
+Keep the submission in English so other people are able to understand it.
 -->
 
 ### Issue Reference

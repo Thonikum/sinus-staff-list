@@ -6,11 +6,10 @@
     },
     "extends": "eslint:recommended",
     "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
+        "registerPlugin": "readonly"
     },
     "parserOptions": {
-        "ecmaVersion": 11
+        "ecmaVersion": 2018
     },
     "rules": {
         "no-unused-vars": "warn"

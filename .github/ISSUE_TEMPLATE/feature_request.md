@@ -6,15 +6,19 @@ labels: status > pending, type > enhancement
 assignees: ''
 ---
 
-<!-- Provide a short and clear title above -->
-
 <!--
+Provide a short and clear title above
+
 If you need help with the script, join the Discord instead!
 https://discordapp.com/invite/Q3qxws6
--->
 
-<!--
-Please submit one idea or feature per submission please!
+Before submitting a feature request, make sure this wasn't already submitted or is already implemented in the newest version.
+
+Please suggest one feature per submission please!
+
+Keep the submission in English so other people are able to understand it.
+
+If you decide to delete the template and don't fill out the necessary information, the issue will be closed without any comment.
 -->
 
 ### Feature Description
