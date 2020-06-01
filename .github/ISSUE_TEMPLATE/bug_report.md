@@ -6,15 +6,19 @@ labels: status > pending, type > bug
 assignees: ''
 ---
 
-<!-- Provide a short and clear title above -->
-
 <!--
+Provide a short and clear title above
+
 If you need help with the script, join the Discord instead!
 https://discordapp.com/invite/Q3qxws6
--->
 
-<!--
+Before submitting a bug report, make sure this wasn't already reported or is already fixed in the newest version.
+
 Please report one bug per submission please!
+
+Keep the submission in English so other people are able to understand it.
+
+If you decide to delete the template and don't fill out the necessary information, the issue will be closed without any comment.
 -->
 
 ### Bug Description
@@ -34,13 +38,12 @@ Steps to reproduce the bug:
 ### Versions
 <!--
 Please provide the following information:
-If you delete this section and don't provide the versions, the issue will be closed.
 -->
 <!--
 The script version can be found in the script file at the top.
 The SinusBot version can be found in the webinterface in the about tab.
 -->
-- script version: [e.g. 1.1.0]
+- script version: [e.g. 1.3.0]
 - SinusBot version [e.g. 1.0]
 
 ### Additional Context
