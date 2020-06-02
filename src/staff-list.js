@@ -13,7 +13,7 @@ registerPlugin(
         description:
             'With this script, the bot will automatically keep track of the online status of predefined staff members and post it to a chosen channel description.',
         author: 'RLNT',
-        backends: [ 'ts3' ],
+        backends: ['ts3'],
         vars: [
             {
                 name: 'required',
@@ -47,19 +47,19 @@ registerPlugin(
                 title:
                     'Clickable-Names > Do you want the usernames in the list to be clickable? They work like hyperlinks then.',
                 type: 'select',
-                options: [ 'Yes', 'No' ]
+                options: ['Yes', 'No']
             },
             {
                 name: 'away',
                 title: 'Away-Status > Do you want a third status (besides online & offline) if someone is away/afk?',
                 type: 'select',
-                options: [ 'Yes', 'No' ]
+                options: ['Yes', 'No']
             },
             {
                 name: 'awayChannel',
                 title: 'Away-Channel > Do you want to set someone away/afk if they join an afk channel?',
                 type: 'select',
-                options: [ 'Yes', 'No' ],
+                options: ['Yes', 'No'],
                 indent: 1,
                 conditions: [
                     {
@@ -88,7 +88,7 @@ registerPlugin(
                 name: 'awayMute',
                 title: 'Away-Mute > Do you want to count muted clients as away/afk?',
                 type: 'select',
-                options: [ 'Yes', 'No' ],
+                options: ['Yes', 'No'],
                 indent: 1,
                 conditions: [
                     {
@@ -101,7 +101,7 @@ registerPlugin(
                 name: 'awayDeaf',
                 title: 'Away-Deaf > Do you want to count deaf clients as away/afk?',
                 type: 'select',
-                options: [ 'Yes', 'No' ],
+                options: ['Yes', 'No'],
                 indent: 1,
                 conditions: [
                     {
@@ -126,7 +126,7 @@ registerPlugin(
                 name: 'template',
                 title: 'Custom-Template > Do you want to use a custom template to format your staff list?',
                 type: 'select',
-                options: [ 'Yes', 'No' ]
+                options: ['Yes', 'No']
             },
             {
                 name: 'tUsername',
@@ -391,7 +391,7 @@ registerPlugin(
                 if (group.id === undefined || backend.getServerGroupByID(group.id) === undefined) return;
                 if (group.clients === undefined || group.clients.length === 0) group.clients = [];
                 if (group.groups === undefined || group.groups.length === 0) {
-                    group.groups = [ group.id ];
+                    group.groups = [group.id];
                 } else {
                     group.groups.map(id => backend.getServerGroupByID(id) !== undefined && id !== group.id);
                     group.groups.push(group.id);
@@ -415,13 +415,13 @@ registerPlugin(
 
         function storeUser(uid, nick, group) {
             if (!store.getKeys().includes(uid)) {
-                store.set(uid, [ nick, group ]);
+                store.set(uid, [nick, group]);
             } else if (store.get(uid)[0] !== nick) {
                 store.unset(uid);
-                store.set(uid, [ nick, group ]);
+                store.set(uid, [nick, group]);
             } else if (store.get(uid)[1] !== group) {
                 store.unset(uid);
-                store.set(uid, [ nick, group ]);
+                store.set(uid, [nick, group]);
             }
             updateStaffList();
         }
@@ -437,7 +437,7 @@ registerPlugin(
             let list = [];
             const keys = store.getKeys();
             keys.forEach(key => {
-                list.push([ key, store.get(key)[0], store.get(key)[1] ]);
+                list.push([key, store.get(key)[0], store.get(key)[1]]);
             });
 
             staffList = list;
@@ -555,11 +555,11 @@ registerPlugin(
                 return 0;
             });
 
-            return [ staffOnline, staffAway, staffOffline ];
+            return [staffOnline, staffAway, staffOffline];
         }
 
         function updateDescription(staffGroups, channel) {
-            const [ staffOnline, staffAway, staffOffline ] = getSortedStaffList();
+            const [staffOnline, staffAway, staffOffline] = getSortedStaffList();
             let description = '';
             staffGroups.forEach(staffGroup => {
                 let staffUsersToList = '';
